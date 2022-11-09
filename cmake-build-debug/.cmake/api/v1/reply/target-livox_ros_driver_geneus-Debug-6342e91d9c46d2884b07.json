@@ -1,0 +1,69 @@
+{
+	"backtrace" : 4,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_custom_target",
+			"include",
+			"generate_messages",
+			"add_dependencies"
+		],
+		"files" : 
+		[
+			"cmake-build-debug/thirdparty/livox_ros_driver/cmake/livox_ros_driver-genmsg.cmake",
+			"/opt/ros/noetic/share/genmsg/cmake/genmsg-extras.cmake",
+			"thirdparty/livox_ros_driver/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 2
+			},
+			{
+				"command" : 2,
+				"file" : 2,
+				"line" : 19,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 307,
+				"parent" : 1
+			},
+			{
+				"file" : 0,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 110,
+				"parent" : 3
+			},
+			{
+				"command" : 3,
+				"file" : 0,
+				"line" : 111,
+				"parent" : 3
+			}
+		]
+	},
+	"dependencies" : 
+	[
+		{
+			"backtrace" : 5,
+			"id" : "livox_ros_driver_generate_messages_eus::@17a47b369debf1e330eb"
+		}
+	],
+	"id" : "livox_ros_driver_geneus::@17a47b369debf1e330eb",
+	"name" : "livox_ros_driver_geneus",
+	"paths" : 
+	{
+		"build" : "thirdparty/livox_ros_driver",
+		"source" : "thirdparty/livox_ros_driver"
+	},
+	"sources" : [],
+	"type" : "UTILITY"
+}

@@ -58,6 +58,13 @@ bool LaserMapping::LoadParams(ros::NodeHandle &nh) {
     common::V3D lidar_T_wrt_IMU;
     common::M3D lidar_R_wrt_IMU;
 
+    ///Added done
+    nh.param<int>("lidar_input_type",lidar_input_type,0);
+    if(lidar_input_type==0) cout<<"Lidar: mid70"<<endl;
+    else if(lidar_input_type==1) cout<<"Lidar: avia"<<endl;
+    else { cout<<"Lidar type wrong!"<<endl; return false;}
+    ///Added done
+
     nh.param<bool>("path_save_en", path_save_en_, true);
     nh.param<bool>("publish/path_publish_en", path_pub_en_, true);
     nh.param<bool>("publish/scan_publish_en", scan_pub_en_, true);
@@ -398,6 +405,19 @@ void LaserMapping::LivoxPCLCallBack(const livox_ros_driver::CustomMsg::ConstPtr 
 
             PointCloudType::Ptr ptr(new PointCloudType());
             preprocess_->Process(msg, ptr);
+
+            ///Added by xinzhao:coordination transformation
+            for(size_t i=0;i<ptr->size();i++){
+                Eigen::Vector3d pt_body(
+                    -ptr->points[i].y,
+                    ptr->points[i].x,
+                    ptr->points[i].z);
+                ptr->points[i].x=pt_body(0);
+                ptr->points[i].y=pt_body(1);
+                ptr->points[i].z=pt_body(2);
+            }
+            ///Added done
+
             lidar_buffer_.emplace_back(ptr);
             time_buffer_.emplace_back(last_timestamp_lidar_);
         },
@@ -423,7 +443,34 @@ void LaserMapping::IMUCallBack(const sensor_msgs::Imu::ConstPtr &msg_in) {
     }
 
     last_timestamp_imu_ = timestamp;
+
+    ///Modified by xinzhao:coordination transformation
+    sensor_msgs::Imu::Ptr buf(new sensor_msgs::Imu(*msg_in));
+    if(lidar_input_type==0){
+        buf->angular_velocity.z=msg->angular_velocity.x*M_PI/180.0;
+        buf->angular_velocity.x=msg->angular_velocity.y*M_PI/180.0;
+        buf->angular_velocity.y=msg->angular_velocity.z*M_PI/180.0;
+        buf->linear_acceleration.z=msg->linear_acceleration.x;
+        buf->linear_acceleration.x=msg->linear_acceleration.y;
+        buf->linear_acceleration.y=msg->linear_acceleration.z;
+    }
+    else if(lidar_input_type==1){
+        buf->angular_velocity.z=msg->angular_velocity.x*M_PI/180.0;
+        buf->angular_velocity.x=-msg->angular_velocity.y*M_PI/180.0;
+        buf->angular_velocity.y=-msg->angular_velocity.z*M_PI/180.0;
+        buf->linear_acceleration.z=msg->linear_acceleration.x;
+        buf->linear_acceleration.x=-msg->linear_acceleration.y;
+        buf->linear_acceleration.y=-msg->linear_acceleration.z;
+    }
+    imu_buffer_.emplace_back(buf);
+
+    time(&last_time);
+
+    /*** origin code
     imu_buffer_.emplace_back(msg);
+    ***/
+    ///Modified done
+
     mtx_buffer_.unlock();
 }
 
@@ -661,6 +708,18 @@ void LaserMapping::ObsModel(state_ikfom &s, esekfom::dyn_share_datastruct<double
 void LaserMapping::PublishPath(const ros::Publisher pub_path) {
     SetPosestamp(msg_body_pose_);
     msg_body_pose_.header.stamp = ros::Time().fromSec(lidar_end_time_);
+    ///Added by xinzhao
+    odo odo_temp;
+    odo_temp.time_stamp=calUTCWeekSec(lidar_end_time_);
+    odo_temp.x=msg_body_pose_.pose.position.x;
+    odo_temp.y=msg_body_pose_.pose.position.y;
+    odo_temp.z=msg_body_pose_.pose.position.z;
+    odo_temp.qx=msg_body_pose_.pose.orientation.x;
+    odo_temp.qy=msg_body_pose_.pose.orientation.y;
+    odo_temp.qz=msg_body_pose_.pose.orientation.z;
+    odo_temp.qw=msg_body_pose_.pose.orientation.w;
+    odometry_out.push_back(odo_temp);
+    ///Added done
     msg_body_pose_.header.frame_id = "camera_init";
 
     /*** if path is too large, the rvis will crash ***/
@@ -668,6 +727,7 @@ void LaserMapping::PublishPath(const ros::Publisher pub_path) {
     if (run_in_offline_ == false) {
         pub_path.publish(path_);
     }
+
 }
 
 void LaserMapping::PublishOdometry(const ros::Publisher &pub_odom_aft_mapped) {
@@ -786,13 +846,23 @@ void LaserMapping::Savetrajectory(const std::string &traj_file) {
         return;
     }
 
-    ofs << "#timestamp x y z q_x q_y q_z q_w" << std::endl;
+    ///Modified by xinzhao
+
+    //origin code
+    /*ofs << "#timestamp x y z q_x q_y q_z q_w" << std::endl;
     for (const auto &p : path_.poses) {
         ofs << std::fixed << std::setprecision(6) << p.header.stamp.toSec() << " " << std::setprecision(15)
             << p.pose.position.x << " " << p.pose.position.y << " " << p.pose.position.z << " " << p.pose.orientation.x
             << " " << p.pose.orientation.y << " " << p.pose.orientation.z << " " << p.pose.orientation.w << std::endl;
-    }
+    }*/
 
+    for (const auto p : odometry_out) {
+        ofs << std::fixed << std::setprecision(6) << p.time_stamp << " "
+            << p.x << " " << p.y << " " << p.z << " " << p.qx
+            << " " << p.qy << " " << p.qz << " " << p.qw << std::endl;
+    }
+    ofs.flush();
+    ///Modified done
     ofs.close();
 }
 

@@ -14,6 +14,12 @@
 #include "options.h"
 #include "pointcloud_preprocess.h"
 
+///Added by xinzhao
+#include <vector>
+#include <time.h>
+using namespace std;
+///Added done
+
 namespace faster_lio {
 
 class LaserMapping {
@@ -62,6 +68,26 @@ class LaserMapping {
     void Savetrajectory(const std::string &traj_file);
 
     void Finish();
+    ///Added by xinzhao
+    double calUTCWeekSec(double utc_sec){
+        int week = (utc_sec + 4 * 24 * 3600) / (7 * 24 * 3600);
+        double week_sec = utc_sec + 4 * 24 * 3600 - week * 7 * 24 * 3600;
+        return week_sec;
+    }
+
+    time_t get_last_time(){ return last_time;}
+
+    struct odo{
+        double time_stamp;
+        double x;
+        double y;
+        double z;
+        double qx;
+        double qy;
+        double qz;
+        double qw;
+    };
+    ///Added done
 
    private:
     template <typename T>
@@ -169,6 +195,12 @@ class LaserMapping {
     PointCloudType::Ptr pcl_wait_save_{new PointCloudType()};  // debug save
     nav_msgs::Path path_;
     geometry_msgs::PoseStamped msg_body_pose_;
+
+    ///Added by xinzhao
+    int lidar_input_type;
+    vector<odo> odometry_out;
+    time_t last_time=0;
+    ///Added by xinzhao
 };
 
 }  // namespace faster_lio

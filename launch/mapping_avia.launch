@@ -2,9 +2,18 @@
 <!-- Launch file for Livox AVIA LiDAR -->
 
 	<arg name="rviz" default="true" />
-
+<!-- Added by xinzhao  -->
+    <!-- 0 for mid70, 1 for avia -->
+    <arg name="lidar_type" default="0"/>
+    <arg name="tra_path" default="./Log/trajectory.txt"/>
+<!-- Added done -->
 	<rosparam command="load" file="$(find faster_lio)/config/avia.yaml" />
 
+<!-- Added by xinzhao  -->
+    <!-- 0 for mid70, 1 for avia -->
+    <param name="lidar_input_type" value="$(arg lidar_type)"/>
+    <param name="trajectory_out_path" value="$(arg tra_path)"/>
+<!-- Added done -->
 	<param name="feature_extract_enable" type="bool" value="0"/>
 	<param name="point_filter_num_" type="int" value="3"/>
 	<param name="max_iteration" type="int" value="3" />
